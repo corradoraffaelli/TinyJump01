@@ -12,22 +12,13 @@ public class PlayerMovements : MonoBehaviour {
 
 	public PlayerState playerState;
 
-	public float jumpFactor = 2.0f;
-	public float maxFallingSpeed = 5.0f;
-
-	public float changeXSpeed = 5.0f;
-
-	public float rotationAirSpeed = 3.0f;
-	
-	public bool jump = false;
-
-	Rigidbody2D rigidbody;
-
+	bool jump = false;
 	bool firstJump = true;
+	
+	Rigidbody2D rigidbody;
+	TrajectoryController trajectory;
 
-	public float gravity = -8.0f;
-	public float velocity = 8.0f;
-
+	//variabili che caratterizzano l'inizio del salto
 	float ySpeed = 0.0f;
 	float xSpeed = 0.0f;
 	float jumpingTime = 0.0f;
@@ -39,6 +30,10 @@ public class PlayerMovements : MonoBehaviour {
 	{
 		rigidbody = GetComponent<Rigidbody2D> ();
 		playerYSize = GetComponent<BoxCollider2D> ().bounds.size.y / 2.0f;
+		GameObject gameController = GameObject.FindGameObjectWithTag ("GameController");
+		if (gameController != null) {
+			trajectory = gameController.GetComponent<TrajectoryController>();
+		}
 	}
 
 	void Update () 
@@ -47,24 +42,29 @@ public class PlayerMovements : MonoBehaviour {
 		if (Input.GetButtonUp("Jump"))
 		    jump = true;
 
+		//se sono in aria
+		if (playerState == PlayerState.OnAir && trajectory != null) {
 
-		if (playerState == PlayerState.OnAir) {
+			//aggiorno le posizioni
 			float newXPos = jumpingPosition.x + xSpeed*(Time.time - jumpingTime);
-
-			float newYPos = jumpingPosition.y + ySpeed*(Time.time - jumpingTime) - 1.0f/2.0f * gravity * (Time.time - jumpingTime) * (Time.time - jumpingTime);
-
+			float newYPos = jumpingPosition.y + ySpeed*(Time.time - jumpingTime) - 1.0f/2.0f * trajectory.gravity * (Time.time - jumpingTime) * (Time.time - jumpingTime);
 			transform.position = new Vector3(newXPos, newYPos, transform.position.z);
+
+			//ruoto il player, metto il suo forward lungo la direzione della velocità
+			//BUG!! da sistemare, probabilmmente basta un controllo sui segni
+			float velY = ySpeed - trajectory.gravity * (Time.time - jumpingTime);
+			transform.right = new Vector3(xSpeed, velY, transform.forward.z);
 		}
 
-		if (jump) {
+		if (jump && trajectory!= null) {
 			jump = false;
 
 			transform.SetParent(null);
 
 			Vector3 direction = transform.up;
 
-			ySpeed = direction.y * velocity;
-			xSpeed = direction.x * velocity;
+			ySpeed = direction.y * trajectory.velocity;
+			xSpeed = direction.x * trajectory.velocity;
 
 			jumpingTime = Time.time;
 
@@ -72,125 +72,45 @@ public class PlayerMovements : MonoBehaviour {
 
 			playerState = PlayerState.OnAir;
 		}
-
-		//limite velocità di caduta
-		//if (rigidbody.velocity.y < -maxFallingSpeed)
-		//	rigidbody.velocity = new Vector2 (rigidbody.velocity.x, -maxFallingSpeed);
-
-		//if (playerState == PlayerState.OnAir) {
-			//controllo la rotazione del player se è in aria
-			//la rotazione del player deve essere coerente con la parabola che sta percorrendo
-			/*
-			Vector2 velocityVector = rigidbody.velocity;
-			Vector2 velocityNormal = new Vector2(-velocityVector.y, velocityVector.x);
-			Vector3 tempUp = new Vector3(velocityNormal.x, velocityNormal.y, transform.up.z);
-			transform.up = Vector3.Lerp(transform.up, tempUp, Time.deltaTime * rotationAirSpeed);
-			*/
-
-			//faccio tendere la velocità lungo l'asse X a 0. Non è una cosa strettamente necessaria, ma per lunghi salti può essere 
-			//visivamente piacevole
-			/*
-			float oldHorizSpeed = rigidbody.velocity.x;
-			float newHorizSpeed = 0.0f;
-			if (oldHorizSpeed > 0)
-			{
-				newHorizSpeed = oldHorizSpeed - changeXSpeed*Time.deltaTime;
-				if (newHorizSpeed < 0)
-					newHorizSpeed = 0.0f;
-			}
-			if (oldHorizSpeed < 0)
-			{
-				newHorizSpeed = oldHorizSpeed + changeXSpeed*Time.deltaTime;
-				if (newHorizSpeed > 0)
-					newHorizSpeed = 0.0f;
-			}
-
-			rigidbody.velocity = new Vector2 (newHorizSpeed, rigidbody.velocity.y);
-			*/
-		//}
 	}
 
-	void FixedUpdate()
-	{
-		/*
-		if (playerState == PlayerState.OnAir) {
-			if (firstJump)
-			{
-				firstJump = false;
-				Debug.Log (rigidbody.velocity.magnitude);
-			}
-		}
-		*/
-
-		//if (playerState == PlayerState.OnPlanet)
-		//	rigidbody.velocity = Vector2.zero;
-
-		//se la variabile del salto è attiva, aggiungo la forza)
-		/*
-		if (jump) {
-			rigidbody.isKinematic = false;
-			transform.SetParent(null);
-			jump = false;
-
-
-			//impongo una forza
-			//Vector2 jumpDirection = new Vector2(transform.up.x, transform.up.y);
-			//jumpDirection.Scale(new Vector2(jumpFactor, jumpFactor));
-			//Debug.Log (jumpDirection);
-			//rigidbody.AddForce(jumpDirection);
-
-
-			//impongo una velocità iniziale (può essere utile per il calcolo della traiettoria
-			Vector2 jumpDirection = (new Vector2(transform.up.x, transform.up.y)).normalized;
-			jumpDirection.Scale(new Vector2(jumpFactor, jumpFactor));
-			rigidbody.velocity = jumpDirection;
-
-
-			playerState = PlayerState.OnAir;
-		}
-		*/
-
-
-	}
-
-	//mette il player come figlio del pianeta
+	//mette il player come figlio del pianeta e fa le dovute operazioni
 	void SetPlanetChild(GameObject planetObj)
 	{
-		//Vector3 diff = planetObj.transform.position - transform.position;
-		//diff = new Vector3 (diff.x, 0.0f, diff.z);
-		//Quaternion rotation = Quaternion.LookRotation(diff);
-		//transform.rotation = rotation;
-		//transform.LookAt (planetObj.transform.position, Vector3.forward);
-
+		//ruoto il player nella direzione del pianeta
+		//copiato, col lookAt non riuscivo
 		Quaternion rotation = Quaternion.LookRotation
 			(planetObj.transform.position - transform.position, transform.TransformDirection(Vector3.forward));
 		transform.rotation = new Quaternion(0, 0, rotation.z, rotation.w);
 
+		//cambio lo stato del player
 		playerState = PlayerState.OnPlanet;
+		//metto il player come figlio del pianeta
 		transform.SetParent(planetObj.transform);
 
-		/*
-		playerState = PlayerState.OnPlanet;
-		transform.SetParent(planetObj.transform);
-
-
-		//Vector2 direction = (new Vector2 (-transform.localPosition.x, -transform.localPosition.y)).normalized;
-		Vector2 direction = (new Vector2 (-(transform.position.x - planetObj.transform.position.x), 
-		                                  -(transform.position.y) - planetObj.transform.position.y)).normalized;
-		transform.up = -direction;
-
-		rigidbody.velocity = Vector2.zero;
-
-		rigidbody.isKinematic = true;
-		*/
+		SetPlayerDistance (planetObj);
 	}
 
 	void OnTriggerEnter2D(Collider2D other)
 	{
 		if (other.tag == "Planet") {
 			SetPlanetChild(other.gameObject);
-			Debug.Log ("colliso con pianeta");
-		}
-			
+		}	
 	}
+
+	void SetPlayerDistance(GameObject planetObj)
+	{
+		Planet planetScript = planetObj.GetComponent<Planet> ();
+
+		if (planetScript != null) {
+			//piazzo il player a distanza apposita
+			float distance = planetScript.radius + playerYSize;
+
+			Vector3 actualPositionNorm = transform.localPosition.normalized;
+
+			transform.localPosition = new Vector3(actualPositionNorm.x * distance, actualPositionNorm.y*distance, 0.0f);
+		}
+
+	}
+
 }

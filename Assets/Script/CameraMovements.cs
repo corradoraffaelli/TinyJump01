@@ -14,6 +14,7 @@ public class CameraMovements : MonoBehaviour {
 	WorldCreator worldCreator;
 	public PlayerMovements playerMovements;
 
+	bool followPlayer = false;
 	bool followingPlayer = false;
 	Vector3 diffPosition = Vector3.zero;
 
@@ -35,19 +36,17 @@ public class CameraMovements : MonoBehaviour {
 		if (worldCreator != null)
 		{
 
-			bool followPlayer = false;
 			if (playerMovements != null)
 			{
-				Debug.Log ("cambiato");
 				if (playerMovements.playerState != oldPlayerState)
 				{
-					Debug.Log ("cambiato");
 					if (playerMovements.playerState == PlayerMovements.PlayerState.OnPlanet)
 						followPlayer = false;
 					if (playerMovements.playerState == PlayerMovements.PlayerState.OnAir)
 					{
 						followPlayer = true;
-						Debug.Log ("follow player");
+
+						diffPosition = transform.position - player.transform.position;
 					}
 				}
 			}
@@ -55,8 +54,6 @@ public class CameraMovements : MonoBehaviour {
 			//si prendono il pianeta attuale e quello successivo (se esiste) e si passano alle funzioni che gestiscono la camera
 			if (!followPlayer)
 			{
-				//resetto la variabile
-				followingPlayer = false;
 
 				int actualIndex = worldCreator.GetActivePlanetIndex();
 				if (actualIndex != -1)
@@ -70,21 +67,14 @@ public class CameraMovements : MonoBehaviour {
 						SetCameraSize(activePlanet, nextPlanet, actualIndex);
 					}
 				}
+
 			}
 			else
 			{
 				//la camera dovrebbe seguire il player
-				if (!followingPlayer)
-				{
-					diffPosition = transform.position - player.transform.position;
-					Debug.Log ("salvata pos");
-				}
 
-				followingPlayer = true;
-
-				Vector3 destPosition = transform.position + diffPosition;
-
-				transform.position = Vector3.Lerp(transform.position, destPosition, Time.deltaTime * 2.0f);
+				Vector3 destPosition = player.transform.position + diffPosition;
+				transform.position = Vector3.Lerp(transform.position, destPosition, Time.deltaTime * lerpSpeedMovement*3.0f);
 			}
 		}
 

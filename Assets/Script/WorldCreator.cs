@@ -280,6 +280,11 @@ public class WorldCreator : MonoBehaviour {
 		return null;
 	}
 
+	public GameObject GetActivePlanet()
+	{
+		return GetPlanetObject (GetActivePlanetIndex ());
+	}
+
 	//restituisce la Y massima di un coin
 	public float GetMaxY(int index)
 	{
@@ -318,5 +323,26 @@ public class WorldCreator : MonoBehaviour {
 			}
 		}
 		return null;
+	}
+
+	public void ResetCoins()
+	{
+		if (planetElements != null) {
+			for (int i = 0; i < planetElements.Length; i++)
+			{
+				if (planetElements[i] != null && planetElements[i].coins != null)
+				{
+					for (int j = 0; j < planetElements[i].coins.Count; j++)
+					{
+						if (planetElements[i].coins[j] != null)
+						{
+							Coin coinScript = planetElements[i].coins[j].GetComponent<Coin>();
+							if (coinScript != null)
+								coinScript.Show();
+						}
+					}
+				}
+			}
+		}
 	}
 }

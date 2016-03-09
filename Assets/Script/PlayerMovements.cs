@@ -10,7 +10,7 @@ public class PlayerMovements : MonoBehaviour {
 		Default
 	}
 
-	public Transform playerBeginningPosition;
+	public Vector3 playerBeginningPosition;
 
 	//stati del player, attuale ed al frame precedente
 	public PlayerState playerState = PlayerState.OnAir;
@@ -31,6 +31,7 @@ public class PlayerMovements : MonoBehaviour {
 	TrajectoryController trajectory;
 	WorldCreator worldCreator;
 	PointsController pointsController;
+	ResetController resetController;
 
 	//variabili che caratterizzano l'inizio del salto
 	float ySpeed = -1.0f;
@@ -46,8 +47,8 @@ public class PlayerMovements : MonoBehaviour {
 
 	void Start()
 	{
-		if (playerBeginningPosition != null)
-			transform.position = playerBeginningPosition.position;
+		playerBeginningPosition = transform.position;
+			
 
 		//riferimenti ai component dell'oggetto
 		rigidbody = GetComponent<Rigidbody2D> ();
@@ -60,6 +61,7 @@ public class PlayerMovements : MonoBehaviour {
 			trajectory = gameController.GetComponent<TrajectoryController>();
 			worldCreator = gameController.GetComponent<WorldCreator>();
 			pointsController = gameController.GetComponent<PointsController>();
+			resetController = gameController.GetComponent<ResetController>();
 		}
 
 		jumpingPosition = transform.position;
@@ -176,7 +178,14 @@ public class PlayerMovements : MonoBehaviour {
 
 	void DeathManager()
 	{
-		Application.LoadLevel ("01");
+		//Application.LoadLevel ("01");
+		if (resetController != null) {
+			Debug.Log ("resettato");
+			ResetPlayerPosition();
+			resetController.ResetScene();
+		} else {
+			Application.LoadLevel ("01");
+		}
 	}
 
 	//mette il player come figlio del pianeta e fa le dovute operazioni
@@ -265,6 +274,18 @@ public class PlayerMovements : MonoBehaviour {
 			}
 		}
 		return playerYSize;
+	}
+
+	public void ResetPlayerPosition()
+	{
+		float ySpeed = -1.0f;
+		float xSpeed = 0.0f;
+		float jumpingTime = Time.time;
+		Vector3 jumpingPosition = playerBeginningPosition;
+		transform.position = playerBeginningPosition;
+		transform.up = new Vector3(1.0f, 1.0f,1.0f);
+
+		playerState = PlayerState.OnAir;
 	}
 
 }

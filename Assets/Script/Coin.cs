@@ -22,4 +22,15 @@ public class Coin : MonoBehaviour {
 			renderer.color = newColor;
 		}
 	}
+
+	public void Show()
+	{
+		taken = false;
+		
+		if (renderer != null) {
+			Color oldColor = renderer.color;
+			Color newColor = new Color(oldColor.r, oldColor.g, oldColor.b, 1.0f);
+			renderer.color = newColor;
+		}
+	}
 }

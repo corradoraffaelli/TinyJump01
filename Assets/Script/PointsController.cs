@@ -37,6 +37,12 @@ public class PointsController : MonoBehaviour {
 		multiplierChanged = true;
 	}
 
+	public void ResetPoints()
+	{
+		points = 0;
+		pointsChanged = true;
+	}
+
 	void ManagePointsChanged()
 	{
 		if (pointsChanged) {
